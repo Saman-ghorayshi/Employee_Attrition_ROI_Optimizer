@@ -7,11 +7,16 @@ from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import SMOTE
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = BASE_DIR / "data" / "Attrition.csv"
+
 def run_diagnostic_audit():
-    data_path = Path("../../data/Attrition.csv")
-    if not data_path.exists(): data_path = Path("data/Attrition.csv")
+    # added dynamic path to make sure it works
+    if not DATA_PATH.exists():
+        print(f"Error: Data source not found at {DATA_PATH}")
+        return
     
-    df = pd.read_csv(data_path)
+    df = pd.read_csv(DATA_PATH)
     df['Attrition'] = (df['Attrition'] == 'Yes').astype(int)
     X = df.drop(columns=['Attrition', 'EmployeeCount', 'StandardHours', 'Over18', 'EmployeeNumber'], errors='ignore')
     y = df['Attrition']
@@ -31,23 +36,23 @@ def run_diagnostic_audit():
     X_res, y_res = sm.fit_resample(X_p, y)
     print(f"Resampling Audit: Original Class Ratio {y.mean():.2%}, Balanced Ratio {y_res.mean():.2%}")
 
-    # 3. LogReg Weights & Sigmoid Simulation
+    # 3. Logistic Regression & Sigmoid Simulation
     clf = LogisticRegression(solver='liblinear', random_state=42)
     clf.fit(X_res, y_res)
     
-    # Manual Sigmoid Verification for Observation #25
+    # Mathematical Integrity Check for a sample observation
     sample_idx = 25
     x_sample = X_res[sample_idx]
     
-    # Mathematical score: z = wX + b
+    # Calculate score: z = wX + b
     z = np.dot(clf.coef_[0], x_sample) + clf.intercept_[0]
     prob_manual = 1 / (1 + np.exp(-z))
     prob_model = clf.predict_proba(x_sample.reshape(1, -1))[0, 1]
     
-    print("\n--- Mathematical Integrity Check ---")
-    print(f"Manual Calculation S(z): {prob_manual:.4f}")
-    print(f"Model predict_proba:     {prob_model:.4f}")
-    print(f"Integrity Status:        {'PASS' if np.isclose(prob_manual, prob_model) else 'FAIL'}")
+    print("\n--- Technical Integrity Report ---")
+    print(f"Manual Sigmoid Calculation: {prob_manual:.4f}")
+    print(f"Scikit-Learn Output:      {prob_model:.4f}")
+    print(f"Verification Status:       {'PASS' if np.isclose(prob_manual, prob_model) else 'FAIL'}")
 
 if __name__ == "__main__":
     run_diagnostic_audit()
