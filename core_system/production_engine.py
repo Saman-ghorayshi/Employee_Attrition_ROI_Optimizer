@@ -15,8 +15,10 @@ from imblearn.ensemble import BalancedRandomForestClassifier
 RANDOM_STATE = 42
 REPLACEMENT_COST = 15000
 INTERVENTION_COST = 2000
-DATA_SOURCE = Path("../../data/Attrition.csv")
-OUTPUT_PATH = Path("../../outputs/")
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_SOURCE = BASE_DIR / "data" / "Attrition.csv"
+OUTPUT_PATH = BASE_DIR / "outputs"
 
 def engineer_risk_features(df):
     """Implement derived features based on organizational risk factors."""
@@ -31,7 +33,11 @@ def get_optimized_threshold(y_true, y_probs):
     
     for t in np.linspace(0.1, 0.9, 90):
         y_pred = (y_probs >= t).astype(int)
-        tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+        
+        if len(np.unique(y_pred)) < 2:
+            continue
+            
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
         # Profit = (TP * Net Saving) - (FP * Intervention Cost)
         current_profit = (tp * (REPLACEMENT_COST - INTERVENTION_COST)) - (fp * INTERVENTION_COST)
         
@@ -43,6 +49,11 @@ def get_optimized_threshold(y_true, y_probs):
 def run_production_pipeline():
     # Data Loading and Preparation
     path = DATA_SOURCE if DATA_SOURCE.exists() else Path("data/Attrition.csv")
+    
+    if not path.exists():
+        print(f"File not found: {path}")
+        return
+
     df = pd.read_csv(path)
     df['Attrition'] = (df['Attrition'] == 'Yes').astype(int)
     df = engineer_risk_features(df)
@@ -78,22 +89,27 @@ def run_production_pipeline():
     threshold, profit = get_optimized_threshold(y_test, probs)
     preds = (probs >= threshold).astype(int)
 
-    # Generate Confusion Matrix Visualization
-    cm = confusion_matrix(y_test, preds)
     plt.figure(figsize=(8, 6))
+    cm = confusion_matrix(y_test, preds)
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-    plt.title(f'Optimized Decision Matrix (Threshold: {threshold:.2f})')
+    plt.title(f'ROI Decision Matrix (Threshold: {threshold:.2f})')
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
     
     OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
     plt.savefig(OUTPUT_PATH / 'final_optimized_cm.png')
-    
-    # Save Business Metrics
+    plt.close() # Close plot to free memory
+
     report = pd.DataFrame({
-        "Metric": ["Net Profit", "Recall", "Precision", "Opt Threshold"],
+        "Metric": ["Net Profit", "Recall Score", "Precision Score", "Optimized Threshold"],
         "Value": [f"${profit:,.0f}", f"{recall_score(y_test, preds):.2%}", f"{precision_score(y_test, preds):.2%}", f"{threshold:.2f}"]
     })
     report.to_csv(OUTPUT_PATH / 'final_business_report.csv', index=False)
-    print(f"Final Audit Complete. Projected Net Savings: ${profit:,.0f}")
+    
+    print("-" * 20)
+    print(f"Pipeline executed. Profit: ${profit:,.0f}")
+    print(f"Report saved to outputs folder.")
+    print("-" * 20)
 
 if __name__ == "__main__":
     run_production_pipeline()
