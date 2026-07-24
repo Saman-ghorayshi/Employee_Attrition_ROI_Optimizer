@@ -1,0 +1,19 @@
+Intervention_Cost,Model,Max_Profit
+2000,Logistic Regression,430000
+2000,Random Forest,416000
+3000,Logistic Regression,363000
+3000,Random Forest,339000
+4000,Logistic Regression,299000
+4000,Random Forest,277000
+5000,Logistic Regression,235000
+5000,Random Forest,215000
+6000,Logistic Regression,213000
+6000,Random Forest,165000
+7000,Logistic Regression,196000
+7000,Random Forest,135000
+8000,Logistic Regression,187000
+8000,Random Forest,105000
+9000,Logistic Regression,186000
+9000,Random Forest,78000
+10000,Logistic Regression,185000
+10000,Random Forest,55000

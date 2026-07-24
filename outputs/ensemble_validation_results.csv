@@ -1,0 +1,5 @@
+metric,value
+recall,1.0
+threshold,0.1
+tp,47.0
+roi,705000.0
